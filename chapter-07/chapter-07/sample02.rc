@@ -1,0 +1,16 @@
+#include <windows.h>
+#include "sample02.h" //定义IDM_END的值
+// 菜单
+
+SAMPLE03 MENU DISCARDABLE 
+BEGIN
+    POPUP "文件"
+    BEGIN
+        MENUITEM "结束",IDM_END
+        MENUITEM "测试",IDM_TEST
+    END
+    POPUP "关于"
+    BEGIN
+        MENUITEM "About",IDM_ABOUT
+    END
+END

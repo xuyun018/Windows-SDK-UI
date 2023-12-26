@@ -1,0 +1,7 @@
+#include <windows.h>
+#include "sample02.h" //定义IDM_END的值
+// 菜单
+SAMPLE02 MENU PRELOAD FIXED
+BEGIN
+    MENUITEM "结束"    IDM_END
+END
