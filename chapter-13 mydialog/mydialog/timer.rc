@@ -1,0 +1,17 @@
+#include <windows.h>
+#include "timer.h"
+
+//////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+OPTDLG DIALOG DISCARDABLE  0, 0, 121, 69
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "选项"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,7,38,50,14
+    PUSHBUTTON      "取消",IDCANCEL,61,37,50,14
+    LTEXT           "这是一个选项。",IDC_STATIC,36,19,48,8
+END
