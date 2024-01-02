@@ -1,0 +1,28 @@
+#include <windows.h>
+#include "timer.h"
+
+#include "sample02.h"
+
+//////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+OPTDLG DIALOG DISCARDABLE  0, 0, 117, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "选项"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,7,59,50,14
+    PUSHBUTTON      "取消",IDCANCEL,60,59,50,14
+    LTEXT           "显示",IDC_STATIC,8,5,15,8
+    EDITTEXT        IDC_EDIT1,29,6,76,20,ES_AUTOHSCROLL
+    CONTROL         "时间",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,14,31,30,
+                    10
+    CONTROL         "日期",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,15,46,30,
+                    10
+    CONTROL         "check1",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,67,32,37,10
+    CONTROL         "check2",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,66,44,37,10
+END
