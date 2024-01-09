@@ -1,0 +1,44 @@
+#include <windows.h>
+#include "timer.h"
+
+#include "sample02.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+MYDIALOG DIALOG DISCARDABLE  0, 0, 187, 93
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "测试对话框"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,13,66,50,14
+    PUSHBUTTON      "取消",IDCANCEL,71,65,50,14
+    EDITTEXT        IDC_EDIT1,7,7,47,16,ES_AUTOHSCROLL
+    LISTBOX         IDC_LIST1,118,7,62,46,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_COMBO1,63,7,51,47,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "",IDC_STATIC1,81,35,24,15,SS_SUNKEN
+    SCROLLBAR       IDC_SCROLL1,13,39,54,7
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "文件(&F)"
+    BEGIN
+        MENUITEM "退出(&Q)",                    IDM_END
+    END
+    POPUP "帮助(&H)"
+    BEGIN
+        MENUITEM "关于(&A)",                   IDM_ABOUT
+    END
+    MENUITEM "ダイアログボックス(&D)",      IDM_DLG
+END
