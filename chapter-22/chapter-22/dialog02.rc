@@ -1,0 +1,23 @@
+#include <windows.h>
+#include "dialog02.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DIALOG
+//
+
+MYDIALOG DIALOG DISCARDABLE  0, 0, 134, 51
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "连猫都能听懂的时钟"
+
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "结束",IDOK,48,23,37,14
+    LTEXT           "午後",IDC_AMPM,13,7,15,8
+    LTEXT           "",IDC_HOUR,34,7,11,8
+    LTEXT           "時",IDC_STATIC,51,7,8,8
+    LTEXT           "",IDC_MIN,65,7,11,8
+    LTEXT           "分",IDC_STATIC,82,7,8,8
+    LTEXT           "",IDC_SEC,96,7,11,8
+    LTEXT           "秒",IDC_STATIC,108,7,8,8
+END
