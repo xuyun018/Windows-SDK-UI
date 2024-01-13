@@ -1,0 +1,46 @@
+#include <windows.h>
+
+#include "resource.h"
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+MYICON                  ICON    DISCARDABLE     "myicon.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+MYDLG DIALOG DISCARDABLE  0, 0, 153, 93
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "•¢•§•≥•Û±Ì æ"
+FONT 9, "£Õ£” £–•¥•∑•√•Ø"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,91,7,50,14
+    PUSHBUTTON      "?????",IDCANCEL,92,33,50,14
+    CONTROL         "MYBMP",IDC_STATIC,"Static",SS_BITMAP | SS_REALSIZEIMAGE,
+                    19,18,13,14
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "•’•°•§•Î(&F)"
+    BEGIN
+        MENUITEM "ΩK¡À(&E)",                    IDM_END
+    END
+    MENUITEM "•¿•§•¢•Ì•∞•‹•√•Ø•π(&D)",      IDM_DLG
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+MYBMP                   BITMAP  DISCARDABLE     "bitmap1.bmp"

@@ -1,0 +1,12 @@
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+GRPH MENU DISCARDABLE 
+BEGIN
+    MENUITEM "ฝKมห(&Q)",                    IDM_END
+END
+
