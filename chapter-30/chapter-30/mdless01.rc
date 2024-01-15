@@ -1,0 +1,27 @@
+#include <windows.h>
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+MYDLG DIALOG DISCARDABLE  0, 0, 187, 93
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "猫でもわかるオプション"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    CONTROL         "赤",IDC_RED,"Button",BS_AUTORADIOBUTTON | WS_GROUP,15,
+                    20,23,10
+    CONTROL         "青",IDC_BLUE,"Button",BS_AUTORADIOBUTTON,51,20,23,10
+    CONTROL         "緑",IDC_GREEN,"Button",BS_AUTORADIOBUTTON | WS_GROUP,13,
+                    67,30,10RADIOBUTTON,87,20,23,10
+    CONTROL         "明朝",IDC_MIN,"Button",BS_AUTO
+    CONTROL         "ゴシック",IDC_GO,"Button",BS_AUTORADIOBUTTON,66,67,39,
+                    10
+    DEFPUSHBUTTON   "更新",IDOK,130,7,50,14,WS_GROUP
+    PUSHBUTTON      "終了",IDCANCEL,130,70,50,14
+    GROUPBOX        "色",IDC_STATIC,7,7,117,31
+    GROUPBOX        "書体",IDC_STATIC,7,53,117,31
+    CONTROL         "MYBMP",IDC_STATIC,"Static",SS_BITMAP,133,22,13,14
+END
