@@ -27,7 +27,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
     MSG msg;
     struct form_main pwnd[1];
     HWND hwnd;
-    int width = 800;
+    int width = 960;
     int height = 600;
 
     hwnd = form_create(pwnd, NULL, hInstance, NULL,

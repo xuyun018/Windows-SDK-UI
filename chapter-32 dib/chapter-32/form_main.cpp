@@ -178,7 +178,7 @@ void form_on_timer(HWND hwnd, uintptr_t wparam, uintptr_t lparam)
 			flag = 0;
 
 			pwnd->x[0] += pwnd->dx;
-			if (pwnd->x[0] < 0 || pwnd->x[0] + pwnd->dx > pwnd->right)
+			if (pwnd->x[0] < 0 || pwnd->x[0] > pwnd->right)
 			{
 				pwnd->dx = -pwnd->dx;
 
@@ -193,7 +193,7 @@ void form_on_timer(HWND hwnd, uintptr_t wparam, uintptr_t lparam)
 			flag = 0;
 
 			pwnd->y[0] += pwnd->dy;
-			if (pwnd->y[0] < 0 || pwnd->y[0] + pwnd->dy > pwnd->bottom)
+			if (pwnd->y[0] < 0 || pwnd->y[0] > pwnd->bottom)
 			{
 				pwnd->dy = -pwnd->dy;
 
