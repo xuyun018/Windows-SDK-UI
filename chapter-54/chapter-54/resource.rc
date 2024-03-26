@@ -1,0 +1,41 @@
+#include <windows.h>
+
+#include "resource.h"
+
+//    gr01.rc
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "文件(&F)"
+    BEGIN
+        MENUITEM "退出(&X)",                    IDM_END
+    END
+    MENUITEM "数据输入(&D)",              IDM_DATA
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+MYDLG DIALOG DISCARDABLE  0, 0, 127, 93
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "データ入力"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,79,49,31,14
+    PUSHBUTTON      "取消",IDCANCEL,79,72,31,14
+    LTEXT           "国語：",IDC_STATIC,7,11,18,8
+    LTEXT           "算数：",IDC_STATIC,7,31,18,8
+    LTEXT           "理科：",IDC_STATIC,7,51,18,8
+    LTEXT           "社会：",IDC_STATIC,7,73,18,8
+    EDITTEXT        IDC_KOKUGO,39,7,31,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SANSU,39,28,31,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_RIKA,39,49,31,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SHAKAI,39,70,31,15,ES_AUTOHSCROLL
+END

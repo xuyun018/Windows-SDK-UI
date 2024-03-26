@@ -1,0 +1,36 @@
+#include <windows.h>
+
+#include "resource.h"
+
+///////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+MYDLG DIALOG DISCARDABLE  0, 0, 119, 161
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Γ¨¤Η¤β¤ο¤«¤λλΧΏ"
+FONT 9, "£Ν£Σ £Π¥΄¥·¥Γ¥―"
+BEGIN
+    DEFPUSHBUTTON   "OFF",IDOK,7,7,50,14
+    PUSHBUTTON      "C",IDCANCEL,89,78,16,19
+    EDITTEXT        IDC_EDIT1,7,24,98,17,ES_AUTOHSCROLL
+    PUSHBUTTON      "0",IDC_0,13,129,16,19
+    PUSHBUTTON      "1",IDC_1,13,104,16,19
+    PUSHBUTTON      "2",IDC_2,32,104,16,19
+    PUSHBUTTON      "3",IDC_3,51,104,16,19
+    PUSHBUTTON      "4",IDC_4,13,78,16,19
+    PUSHBUTTON      "5",IDC_5,32,78,16,19
+    PUSHBUTTON      "6",IDC_6,51,78,16,19
+    PUSHBUTTON      "7",IDC_7,13,51,16,19
+    PUSHBUTTON      "8",IDC_8,32,51,16,19
+    PUSHBUTTON      "9",IDC_9,51,51,16,19
+    PUSHBUTTON      "+",IDC_PLUS,70,51,16,19
+    PUSHBUTTON      "-",IDC_MINUS,70,78,16,19
+    PUSHBUTTON      "*",IDC_KAKE,70,104,16,19
+    PUSHBUTTON      "/",IDC_WARI,71,129,16,19
+    PUSHBUTTON      "=",IDC_EQUAL,89,51,16,19
+    PUSHBUTTON      "AC",IDC_ALLCLEAR,89,104,16,19
+    PUSHBUTTON      ".",IDC_POINT,50,129,16,19
+    PUSHBUTTON      "+/-",IDC_PLUSMINUS,90,129,16,19
+END
