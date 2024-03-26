@@ -1,0 +1,46 @@
+#include <windows.h>
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYPOPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "≤ªœ‘ æ"
+    BEGIN
+        MENUITEM "Ω· ¯\tShift + Ctrl + X",      IDM_END
+        POPUP "—°œÓ"
+        BEGIN
+            MENUITEM "√®Õº∆¨\tF1",                  IDM_CAT
+            MENUITEM "π∑Õº∆¨\tF2",                  IDM_DOG
+            MENUITEM " ÛÕº∆¨\tF3",                  IDM_RAT
+            MENUITEM "≤¡≥˝\tEsc",                   IDM_CLR
+        END
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+MYACCEL ACCELERATORS DISCARDABLE 
+BEGIN
+    VK_ESCAPE,      IDM_CLR,                VIRTKEY, NOINVERT
+    VK_F1,          IDM_CAT,                VIRTKEY, NOINVERT
+    VK_F2,          IDM_DOG,                VIRTKEY, NOINVERT
+    VK_F3,          IDM_RAT,                VIRTKEY, NOINVERT
+    "X",            IDM_END,                VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+MYCAT                   BITMAP  DISCARDABLE     "mycat.bmp"
+MYDOG                   BITMAP  DISCARDABLE     "mydog.bmp"
+MYRAT                   BITMAP  DISCARDABLE     "myrat.bmp"

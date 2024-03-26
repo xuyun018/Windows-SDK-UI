@@ -1,0 +1,28 @@
+// rgn01.rc
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+#include <windows.h>
+#include "resource.h"
+
+MYBMP                   BITMAP  DISCARDABLE     "mybmp.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "选项(&O)"
+    BEGIN
+        MENUITEM "按原样显示(&R)",            	IDM_RCT
+        MENUITEM "椭圆剪辑(&E)",            	IDM_ELL
+        MENUITEM "或剪辑(&O)",              	IDM_ELLOR
+        MENUITEM "异或剪辑(&X)",          	IDM_ELLXOR
+    END
+    MENUITEM "退出(&X)",                    IDM_END
+END
+

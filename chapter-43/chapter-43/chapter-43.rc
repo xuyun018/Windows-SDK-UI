@@ -1,0 +1,25 @@
+#include <windows.h>
+
+#include "resource.h"
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "文件(&File)"
+    BEGIN
+        MENUITEM "退出(&X)\tCtrl+X",            IDM_END
+    END
+    POPUP "选项(&Option)"
+    BEGIN
+        MENUITEM "猫图片显示(&C)\tShift + F1",  IDM_CAT
+        MENUITEM "消除(&D)\tShift + F2",    	IDM_CLR
+    END
+END
+
+MYACCEL ACCELERATORS DISCARDABLE 
+BEGIN
+    VK_F1,          IDM_CAT,                VIRTKEY, SHIFT, NOINVERT
+    VK_F2,          IDM_CLR,                VIRTKEY, SHIFT, NOINVERT
+    "X",            IDM_END,                VIRTKEY, CONTROL, NOINVERT
+END
+
+MYBMP			BITMAP		"2.bmp"
