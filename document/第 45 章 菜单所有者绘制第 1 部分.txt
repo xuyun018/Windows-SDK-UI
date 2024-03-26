@@ -1,0 +1,134 @@
+﻿第 45 章 菜单所有者绘制第 1 部分
+这次我们要说的是菜单的自画。至于你能做什么，你应该能够做大多数事情（？），
+因为你是从所有者窗口一侧操作的。更改字体、添加颜色、更改字体大小、显示图形等。
+我们已经在第 41 章中介绍了按钮所有者绘制。当它是一个按钮时，WM_DRAWITEM消息就是绘制的时机。
+菜单也是如此。另外，当您自己绘制菜单时，还有另一个重要信息。这就是 WM_MEASUREITEM 消息。
+
+WM_MEASUREITEM
+idCtl = (UINT) wParam; // 控件标识符
+lpmis = (LPMEASUREITEMSTRUCT) lParam; // 物品尺寸信息
+
+当创建控件（按钮、菜单等）时，该信息会发送给所有者。
+所有者将必要的信息存储在 MEASUREITEMSTRUCT 结构中，由 lParam 指示。
+从菜单发送时，wParam 为 0。那么，MEASUREITEMSTRUCT 结构是什么？
+
+typedef struct tagMEASUREITEMSTRUCT {   // mis 
+    UINT  CtlType;      // 控件类型 
+    UINT  CtlID;        // 组合框/列表框/按钮标识符 
+    UINT  itemID;       // 菜单项/可变高度列表框/
+            // 组合框标识符
+    UINT  itemWidth;    // 菜单项宽度
+    UINT  itemHeight;   // 菜单项高度 
+    DWORD itemData;     // 项目数据
+} MEASUREITEMSTRUCT;
+
+简而言之，当我们收到 WM_MEASUTREITEM 消息时，我们检查 lParam 并填充 MEASUREITEMSTRUCT 结构。
+此时，如果所有者绘制较多，则使用switch语句按控件类型进行分类。
+(ODT_MENU, ODT_LISTBOX, ODT_BUTTON, ODT_COMBOBOX) 接下来，如果是菜单，
+则按菜单项 ID 对其进行分类，并替换该项目的高度和宽度。如果只有一种类型的业主抽签，
+则不需要进行这种排序工作。此外，对于菜单，您可以设置每个菜单项标识符的宽度和高度以匹配最大的菜单项标识符。
+（我的方法是不是有问题？例如，即使我改变每个菜单项的字体大小，显示区域也会调整为最大字体的高度。）
+最后一项数据是多少？在VC++5.0帮助中，
+指定与菜单项关联的应用程序定义的 32 位值
+
+就是它读到的内容。简单地说，它是 AppendMenu 函数的最后一个参数中使用的参数。
+通常，最后一个参数是菜单项的名称，但在所有者绘制的情况下，菜单项在 AppendMenu 函数阶段尚未显示。
+现在，我将向您展示如何使用它的示例。
+
+enum {MENU_END, MENU_DOG, MENU_CAT, MENU_RAT};
+LPCWSTR str[] = {L"结束", L"狗　", L"猫　", L"老鼠"};
+部分省略
+case WM_CREATE:
+    hMenu = CreatePopupMenu();
+    AppendMenu(hMenu, MF_OWNERDRAW, IDM_END, (LPCWSTR)MENU_END);
+    AppendMenu(hMenu, MF_OWNERDRAW, IDM_DOG, (LPCWSTR)MENU_DOG);
+    AppendMenu(hMenu, MF_OWNERDRAW, IDM_CAT, (LPCWSTR)MENU_CAT);
+    AppendMenu(hMenu, MF_OWNERDRAW, IDM_RAT, (LPCWSTR)MENU_RAT);
+    break;
+case WM_MEASUREITEM:
+    lpMI = (LPMEASUREITEMSTRUCT)lp;
+    hdc = GetDC(hWnd);
+    hFont = SetMyFont(L"ＭＳ 明朝", 30);
+    hFontOld = (HFONT)SelectObject(hdc, hFont);
+    GetTextExtentPoint32(hdc,
+        str[lpMI->itemData],
+        lstrlen(str[lpMI->itemData]) - 1,
+        &sz);
+    lpMI->itemWidth = sz.cx;
+    lpMI->itemHeight = sz.cy;
+    SelectObject(hdc, hFontOld);
+    DeleteObject(hFont);
+    ReleaseDC(hWnd, hdc);
+    return TRUE;
+
+创建父窗口后立即调用 CreatePopupMenu。（不能使用所有者绘制创建第一级菜单。）
+然后，使用AppendMenu 添加菜单项。通常，最后一个参数是一个字符串，例如“end”或“option”。
+这里使用了 MENU_END 和 MENU_DOG 等枚举器。这将是您的菜单数据。
+接下来，将宽度和高度数据传递到 WM_MEASUREITEM 消息中的 MEASUREITEMSTRUCT 结构。
+这里使用的GetTextExtentPoint32函数是
+
+BOOL GetTextExtentPoint32( 
+    HDC hdc, // 设备上下文句柄 
+    LPCTSTR lpString, // 字符串地址 
+    int cbString, // 字符数 
+    LPSIZE lpSize // SIZE 结构的地址 
+);
+
+它成为了。该字符串所需的大小现在将存储在 SIZE 结构中。请注意，此功能无法在 16 位版本中使用。
+另一种方法是 GetTextExtent 函数。
+
+DWORD GetTextExtent(hdc, lpszString, cbString)
+HDC hdc; /* 设备上下文句柄 */
+LPCSTR lpszString; /* 字符串地址 */
+int cbString; /* 字符串中的字节数 */
+
+这在用法上与 32 位版本略有不同。返回值的低位字（LOWORD）表示宽度，高位字（HIWORD）表示高度。
+在某些情况下，这两个函数都可能存在大小误差。
+
+顺便说一句，我还没有解释 SIZE 结构。
+
+typedef struct tagSIZE { // siz 
+    LONG cx; 
+    LONG cy; 
+} SIZE;
+
+它定义为：在 16 位版本中，
+
+typedef struct tagSIZE {
+    int cx;
+    int cy;
+} SIZE;
+
+它定义为：
+在上面的程序示例中，SetMyFont是一个自写函数，用于设置字体并返回之前的字体句柄作为返回值。
+
+现在，下次收到 WM_DRAWITEM 消息时，您可以编写一个菜单，但让我们看一个具体的示例。
+
+
+RECT rc;
+部分省略
+case WM_DRAWITEM:
+    lpDI = (LPDRAWITEMSTRUCT)lp;
+    rc = lpDI->rcItem;
+    hdc = lpDI->hDC;
+    hFont = SetMyFont(L"ＭＳ 明朝", 30);
+    hFontOld = (HFONT)SelectObject(hdc, hFont);
+以下省略        
+
+对于较旧的 C 编译器，rc = lpDI->rcItem; 可能会导致错误。
+在过去（K&R 时代），复制整个结构是不可能的。显然，K&R 预测“未来，将有可能分配整个结构。”
+DRAWITEMSTRUCT 结构在第 41 章中进行了简要解释。
+
+itemID 成员是菜单项标识符。itemState 成员指示所需的绘图行为。
+ODS_SELECTED 在选择项目时设置。（更具体的说，就是鼠标选中了。）选中时，
+文字颜色为红色，背景颜色为蓝色。如果未选择，它将是默认颜色，因为没有指定特定颜色。
+
+RECT 结构 rc 是一个矩形，定义了要绘制区域的边界。
+
+RECT 结构将在第 5 章中进行解释。当您想要 TextOut 时，请从该区域的左上角开始。
+
+TextOut(hdc, rc.left, rc.top,....
+
+我是。如果你画的超出了这个区域，就会发生不好的事情。
+（当绘制与 MEASUREITEMSTRUCT 结构中设置的内容不同的内容时等）好吧，介绍已经很长了。
+我们将在下一章中创建实际的程序。

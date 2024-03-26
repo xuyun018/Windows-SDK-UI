@@ -1,0 +1,196 @@
+﻿第 52 章 简单动画第 3 部分
+这次，我将尝试用稍微不同的视角来创作动画。使用 BitBlt 函数直接在父窗口上绘制 BMP。
+执行结果与上一章几乎相同。不过，这个屏幕似乎可能会有点闪烁。
+首先，像往常一样创建一个父窗口。像往常一样，SetTimer 函数生成一个 WM_TIMER 消息。
+当您收到此消息时，请确定绘图的 X 和 Y 坐标。然后让它重画。
+这时候重新绘制所有客户区是不经济的，所以我们会做一点小动作。
+WM_PAINT 从 X 和 Y 坐标绘制。就这样。现在让我们看看实际的程序。
+准备BMP和上次一模一样。以同样的方式创建资源脚本。
+
+源文件如下所示：
+
+
+//        ani01.cpp
+
+#define STRICT
+#define ID_MYTIMER    32767
+#define BMP_W 79
+#define BMP_H 77
+#include <windows.h>
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+
+const WCHAR szClassName[] = L"ani01";        //ウィンドウクラス
+
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+这与往常几乎一样。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //プロシージャ名
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //インスタンス
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = NULL;    //メニュー名
+    wc.lpszClassName = (LPCWSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+这里几乎是一样的。
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"连猫都看得懂的动画",    //タイトルバーにこの名前が表示されます
+            WS_OVERLAPPEDWINDOW,    //ウィンドウの種類
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            CW_USEDEFAULT,    //幅
+            CW_USEDEFAULT,    //高さ
+            NULL,            //親ウィンドウのハンドル、親を作るときはNULL
+            NULL,            //メニューハンドル、クラスメニューを使うときはNULL
+            hInst,            //インスタンスハンドル
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    return TRUE;
+}
+
+这里也类似。
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    int id;
+    static int x, y, hoko, client_w;
+    HDC hdc, hdc_mem;
+    PAINTSTRUCT ps;
+    HBITMAP hBitmap;
+    HINSTANCE hInst;
+    RECT rc;
+    enum {right, left};
+
+    switch (msg) {
+        case WM_CREATE:
+            if (SetTimer(hWnd, ID_MYTIMER, 200, NULL) == 0)
+                MessageBox(hWnd, L"失敗", L"failure", MB_OK);
+            break;
+        case WM_TIMER:
+            GetClientRect(hWnd, &rc);
+            client_w = rc.right;
+            if (hoko == left)
+                rc.left = x - 20;
+            else
+                rc.left = x;
+            rc.top = y;
+            if (hoko == right)
+                rc.right = x + BMP_W + 20;
+            else
+                rc.right = x + BMP_W;
+            rc.bottom = y + BMP_H;
+            switch (hoko) {
+                case right:
+                    x += 20;
+                    if (x + BMP_W >= client_w) 
+                        hoko = left;
+                    break;
+                case left:
+                    x -= 20;
+                    if (x < 0)
+                        hoko = right;
+                    break;
+            }
+            InvalidateRect(hWnd, &rc, TRUE);
+            break;
+        case WM_PAINT:
+            hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+            hdc = BeginPaint(hWnd, &ps);
+            hBitmap = LoadBitmap(hInst, L"MYBMP");
+            hdc_mem = CreateCompatibleDC(hdc);
+            SelectObject(hdc_mem, hBitmap);
+            BitBlt(hdc, x, y, x + BMP_W, y + BMP_H, hdc_mem, 0, 0, SRCCOPY);
+            DeleteDC(hdc_mem);
+            DeleteObject(hBitmap);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"完成确认",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            KillTimer(hWnd, ID_MYTIMER);
+            PostQuitMessage(0);
+            break;
+        default:
+            return (DefWindowProc(hWnd, msg, wp, lp));
+    }
+    return 0L;
+}
+
+父窗口创建后立即执行 SetTimer 函数。完成后不要忘记使用 KillTimer。
+当WM_TIMER消息到达时，首先检查父窗口的大小，和上次一样。
+然后，将父窗口的大小保存在静态变量中。
+将要绘制的 BMP 的位置分配给用于检查父窗口大小的 RECT rc 成员。
+基本上，rc.left = x，rc.top = 0，rc.right = x + BMP_W，rc.bottom = BMP_H，
+但这会带来一些麻烦。现在，将要绘制的 BMP 的位置分配给 rc。
+然后，如果你让这个rc成为无效区域，这个区域就会被重画。
+（InvalidateRect函数） 实际上，如果你只是将新重绘的区域分配给rc，
+那么移动前的图像的一部分将保留下来而不会被重绘。
+那么，让我们先做一个小技巧。如果向右移动，
+只需将重画区域左上角的x坐标向后移动移动的距离即可。
+
+
+rc.right = x - 一步移动的距离
+
+会是这样的。如果是向左移动，则只添加一条移动距离语句。
+设置好rc后，决定绘制的坐标。这次和上次一样。和，
+
+InvalidateRect(hWnd, &rc, TRUE);
+
+如果你运行 ，你之前决定的 rc 区域将被重新绘制。
+
+一旦收到WM_PAINT消息，只需在X、Y坐标处绘制BMP即可。简单的动画现已完成。
+
+
+我解释了创建简单动画的三种方法。我认为还是有办法做到的。
+如果您能想到更简单的方法，请告诉我。

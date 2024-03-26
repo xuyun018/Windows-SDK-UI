@@ -1,0 +1,243 @@
+﻿第 49 章 简单动画第 1 部分
+这次我将讲解一个简单的动画方法。这不是一个成熟的方法，它只是一个简单的方法。
+
+让我们创建一个简单的动画，如左侧所示。如果仔细观察，可以看到红色圆圈只是从左向右移动，
+但通过移动的圆圈可以看到背景中的黑色对角线。
+有很多方法可以做到这一点，但这次我使用了一种称为图元文件的方法。
+图元文件是一种有趣的方法，它允许您记录绘制图形等的步骤，然后回放它们。虽然它有一些缺点，但很容易处理。
+
+首先，我们来考虑一下整体的程序场景。首先，在不同位置画圆圈。将其记录在图元文件中。这次我做了大约5件。
+
+接下来，您应该知道如何依次播放图元文件。可以看到可以使用SetTimer函数。
+当WM_TIMER消息到来时，依次更改要播放的图元文件的数量。将此数字保存在全局变量中。
+并更新客户区。然后，您将收到 WM_PAINT 消息，因此根据全局变量号播放图元文件。
+
+现在，图元文件将被一个接一个地播放，使其看起来像一个动画。
+
+现在，让我们仔细看看如何创建图元文件。
+
+
+如何创建图元文件
+1. 使用 CreateMetaFile 函数获取设备上下文句柄 hdc
+2. 使用 hdc 绘制
+3. 使用 CloseMetaFile(hdc) 获取图元文件句柄
+4. 使用 PlayMetFile 函数进行播放
+5. 使用DeleteMetaFile函数销毁图元文件句柄
+
+它看起来像这样。
+
+HDC CreateMetaFile(
+    LPCTSTR lpszFile     // 指向文件名的指针
+   );
+
+
+此时，如果lpszFile设置为NULL，则会在内存中创建一个图元文件。如果此函数成功，
+您可以获得图元文件的设备上下文句柄。如果不成功则为 NULL。现在，
+您可以使用此时获得的设备上下文句柄来绘制大多数图形，但不是全部。请检查帮助。
+
+HMETAFILE CloseMetaFile(
+    HDC hdc     // 图元文件设备上下文句柄 
+   );
+
+该函数关闭图元文件。此时获得的图元文件句柄将用于以后的播放。
+
+BOOL PlayMetaFile(
+    HDC hdc,    // 设备上下文句柄
+    HMETAFILE hmf     // 图元文件句柄
+   );
+
+现在可以播放内存中的图元文件。图元文件句柄 hmf 是 CloseMetaFile 函数的返回值。
+如果成功，该函数返回 TRUE；如果失败，则返回 FALSE。
+
+BOOL DeleteMetaFile(
+    HMETAFILE hmf     // Windows 格式元文件句柄 
+   );
+
+不再需要图元文件句柄时将其丢弃。现在，上述一系列函数在16位版本和32位版本中可以通用。
+在32位版本中，有CreateEnhMetaFile、CloseEnhMetaFile、PlayEnhMetaFile和DeleteEnhMetaFile函数。
+请查看帮助了解如何使用它。
+
+现在，让我们看一下示例程序。
+
+//        meta01.cpp
+
+#include <windows.h>
+#define IDO 50
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+void MakeMyMeta(void);
+HMETAFILE MakeMyEllipse(int, int);
+
+const WCHAR szClassName[] = L"meta01";        //窗口类名
+
+HMETAFILE hmf[5];
+int play_no;
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+这部分与平常几乎相同。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //过程名称
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //实例
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = NULL;    //菜单名称
+    wc.lpszClassName = (LPCWSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+这一点和往常一样。
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"猫でもわかるメタファイル",    //这个名称将显示在标题栏中
+            WS_OVERLAPPED | WS_SYSMENU,    //窗口类型
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            258,//宽度
+            75,    //高度
+            NULL,            //父窗口句柄，创建父窗口时为NULL
+            NULL,            //菜单句柄，使用类菜单时为NULL
+            hInst,            //实例句柄
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    return TRUE;
+}
+
+我尝试稍微更改一下通常的 WS_OVERLAPPEDWINDOW 窗口样式。修复了窗口大小。
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    int id, i;
+    HDC hdc;
+    PAINTSTRUCT ps;
+    RECT rc;
+
+    switch (msg) {
+        case WM_CREATE:
+            MakeMyMeta();
+            SetTimer(hWnd, 1, 200, NULL);
+            break;
+        case WM_TIMER:
+            play_no++;
+            if (play_no > 5)
+                play_no = 1;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        case WM_PAINT:
+            //绘制背景
+            GetClientRect(hWnd, &rc);
+            hdc = BeginPaint(hWnd, &ps);
+            MoveToEx(hdc, rc.left, rc.bottom / 2, NULL);
+            LineTo(hdc, rc.right, rc.bottom / 2);
+            MoveToEx(hdc, rc.left, rc.top, NULL);
+            LineTo(hdc, rc.right, rc.bottom);
+            MoveToEx(hdc, rc.left, rc.bottom, NULL);
+            LineTo(hdc, rc.right, rc.top);
+            //播放图元文件
+            PlayMetaFile(hdc, hmf[play_no - 1]);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"終了確認",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            //释放图元文件句柄
+            for (i = 0; i <= 4; i++) {
+                DeleteMetaFile(hmf[i]);
+            }
+            KillTimer(hWnd, 1);
+            PostQuitMessage(0);
+            break;
+        default:
+            break;
+    }
+    return (DefWindowProc(hWnd, msg, wp, lp));
+}
+
+
+一旦创建了父窗口，就创建图元文件并调用 SetTimer 函数。
+当WM_TIMER消息到达时，将要播放的图元文件的数量增加1并重绘客户区。
+
+WM_PAINT 消息绘制背景的对角线并播放图元文件。
+
+在应用程序退出之前释放图元文件句柄。
+
+
+void MakeMyMeta(void)
+{
+    static int x1 = 0, x2 = 50;
+    int i;
+    for (i = 0; i <= 4; i++) {
+        hmf[i] = MakeMyEllipse(x1, x2);
+        x1 += IDO;
+        x2 += IDO;
+    }
+    return;
+}
+
+HMETAFILE MakeMyEllipse(int x1, int x2) // 创建图元文件
+{
+    HDC hdc_meta;
+    HBRUSH hBrush;
+    HPEN hPen;
+    hdc_meta = CreateMetaFile(NULL);
+    hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    hPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+    SelectObject(hdc_meta, hPen);
+    SelectObject(hdc_meta, hBrush); 
+    Ellipse(hdc_meta, x1, 0, x2, 50);
+    DeleteObject(hPen);
+    return (CloseMetaFile(hdc_meta));
+}
+
+这是实际创建图元文件的函数。请注意，我使用 NULL_BRUSH 以便背景显示出来。
+使用GetStockObject获得的hBrush无需DeletObject也可以。DeleteObject 没有什么坏处。
+这样就完成了一个简单的动画。我有很多抱怨。一是每次收到WM_TIMER消息时，
+客户区都会完全重绘。这有点不经济。一种可能的方法是使用区域来指定无效区域，
+我们在上一章中就是这样做的。重画的是前一个圆和当前圆的绘制区域之和。
+我认为您应该使用该区域调用 InvalidateRgn 函数。程序有点复杂，不过请尝试一下。

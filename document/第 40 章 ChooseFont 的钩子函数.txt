@@ -1,0 +1,241 @@
+﻿第 40 章 ChooseFont 的钩子函数
+这次，我将解释如何更改ChooseFont，这是常见的对话框之一。这不是很困难。
+使用钩子函数。钩子就是钩子。这是《彼得潘》中的胡克船长。就是稍微勾一下的意思。
+首先，我们看一下使用钩子函数创建的对话框。
+	
+
+上面是第 38 章和第 39 章中 创建的默认对话框。下面是使用我们将创建的挂钩函数修改的对话框。
+请仔细观察，看看有什么不同。
+
+首先，标题或者称谓在很多方面都发生了变化。另外，请注意“字体名称（F）”中的F。
+这意味着如果您按 Alt (GRPH) 键，然后按 F，您将能够选择此项。
+下面的对话框中这个F也被改成了P。
+此外，虽然乍一看可能并不明显，但功能也发生了变化。当您按下“停止”按钮时，
+将出现以下消息框，询问您是否确实要停止指定字体。
+
+如果确定，字体选择将被取消，对话框将消失。如果取消，您可以继续配置字体。
+
+那么我们如何使用钩子函数来做这样的事情呢？
+
+这很容易制作。
+
+
+1. CHOOSEFONT 结构的 lpfnHook 成员中的钩子函数。
+　　指定地址。
+2. 将 CF_ENABLEHOOK 添加到 Flags 成员。
+3. 以与过程相同的方式编写钩子函数。
+
+就这样。钩子函数与过程具有相同的参数和返回值。现在，让我们看一下该程序。
+
+// font04.cpp ChooseFont 和钩子函数
+
+//        font04.cpp  ChooseFontとフック関数
+
+#include <windows.h>
+#include "resource.h"
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK MyHook(HWND, UINT, WPARAM, LPARAM);
+
+BOOL InitApp(HINSTANCE, LPCSTR);
+BOOL InitInstance(HINSTANCE, LPCSTR, int);
+
+int setcf(CHOOSEFONT *);
+int draw_on = 0;
+
+CHOOSEFONT cf;
+LOGFONT lf;
+HWND hParent;
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    WCHAR szClassName[] = L"font04";        //ウィンドウクラス
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst, szClassName))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, szClassName, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+
+到目前为止，与平常相比并没有太大变化。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst, LPCSTR szClassName)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //プロシージャ名
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //インスタンス
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = "MYMENU";    //メニュー名
+    wc.lpszClassName = (LPCSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+同样在这里。
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, LPCSTR szClassName, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"猫也能理解的钩子函数",    //タイトルバーにこの名前が表示されます
+            WS_OVERLAPPEDWINDOW,    //ウィンドウの種類
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            CW_USEDEFAULT,    //幅
+            CW_USEDEFAULT,    //高さ
+            NULL,            //親ウィンドウのハンドル、親を作るときはNULL
+            NULL,            //メニューハンドル、クラスメニューを使うときはNULL
+            hInst,            //インスタンスハンドル
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    hParent = hWnd;
+    wcscpy(lf.lfFaceName, L"ＭＳ ゴシック");
+    setcf(&cf);
+    return TRUE;
+}
+
+这里和平常一样。我尝试稍微更改父窗口中显示的标题。
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    static draw_on = 0;
+    int id;
+    HDC hdc;
+    PAINTSTRUCT ps;
+    HFONT hFont, hOldf;
+    COLORREF crOldc;
+
+    switch (msg) {
+        case WM_COMMAND:
+            switch (LOWORD(wp)) {
+                case IDM_END:
+                    SendMessage(hWnd, WM_CLOSE, 0L, 0L);
+                    break;
+                case IDM_FONT:
+                    if(ChooseFont(&cf) ==TRUE) {
+                        InvalidateRect(hWnd, NULL, TRUE);
+                        draw_on = 1;
+                    }
+                    break;
+            }
+            break;
+        case WM_PAINT:
+            hdc = BeginPaint(hWnd, &ps);
+            hFont = CreateFontIndirect(cf.lpLogFont);
+            hOldf = SelectObject(hdc, hFont);
+            crOldc = SetTextColor(hdc, cf.rgbColors);
+            if(draw_on)
+                TextOut(hdc, 10, 10, (LPCWSTR)L"连猫也能理解的钩子函数", 11);
+            SelectObject(hdc, hOldf);
+            SetTextColor(hdc, crOldc);
+            DeleteObject(hFont);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"完成确认",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            return (DefWindowProc(hWnd, msg, wp, lp));
+    }
+    return 0L;
+}
+
+这里也没有什么变化。我只是稍微更改了 WM_PAINT 处显示的字符串。
+
+//设置CHOOSEFONT结构
+
+int setcf(CHOOSEFONT *cf)
+{
+    cf->lStructSize = sizeof(CHOOSEFONT);
+    cf->hwndOwner = hParent;
+    cf->lpLogFont = &lf;
+    cf->Flags = CF_SCREENFONTS | CF_EFFECTS | CF_INITTOLOGFONTSTRUCT | CF_ENABLEHOOK;
+    cf->rgbColors = RGB(0, 0, 0);
+    cf->nFontType = SCREEN_FONTTYPE;
+    cf->lpfnHook = (LPCFHOOKPROC)MyHook;//指定钩子函数
+    return 0;
+}
+
+添加CF_ENABLEHOOK并指定钩子函数的地址。请务必使用 (LPCFHOOKPROC) 对挂钩函数地址进行类型转换。
+如果你不进行类型转换，现代编译器会生气。
+
+//挂钩选择字体
+LRESULT CALLBACK MyHook(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    switch (msg) {
+        case WM_INITDIALOG:
+            SetWindowText(hWnd, L"连猫都看得懂的钩子");
+            SetWindowText(GetDlgItem(hWnd, IDOK), L"决定");
+            SetWindowText(GetDlgItem(hWnd, IDCANCEL), L"我退出");
+            SetWindowText(GetDlgItem(hWnd, grp2), L"这是一个示例");
+            SetWindowText(GetDlgItem(hWnd, grp1), L"这是一个装饰(&K)");
+            SetWindowText(GetDlgItem(hWnd, stc1), L"Font(&P)");
+            SetWindowText(GetDlgItem(hWnd, stc2), L"Style(&S)");
+            SetWindowText(GetDlgItem(hWnd, stc3), L"Size(&Z)");
+            //SetWindwoText 和 SetDlgItemText 在这里工作相同
+            SetDlgItemText(hWnd, stc4, L"Color(&I)");
+            return TRUE;
+        case WM_COMMAND:
+            if (LOWORD(wp) == IDCANCEL) {
+                if(MessageBox(hWnd, 
+                    (LPCWSTR)L"您确定要退出吗？",
+                    (LPCWSTR)L"取消",
+                    MB_OKCANCEL) == IDOK) {
+                    return FALSE;//返回FALSE返回原函数
+                } else {
+                    return TRUE;//如果返回TRUE，则原函数将被忽略
+                }
+            }
+            break;
+        default:
+            return FALSE;
+    }
+    return FALSE;
+}
+
+一旦创建该对话框，就可以使用 SetWindowText 函数更改标题。关于SetWindowText函数，
+请参见第 11、20、21章等。另外，简单地改变字符串中的 (&F) 等就会改变它的功能。
+类似的函数是 SetDlgItemText 函数。第 15 章对此进行了简要解释。
+
+顺便问一下，你是如何找到这个对话框中每个控件的ID的呢？
+是的。常用对话框控件 ID 为静态控件 stc1、stc2、stc3、... 组为 grp1、grp2、grp3、... 
+按钮为 IDOK、IDCANCEL，组合框为 cmb1、cmb2、... 列表框定义为 lst1、 ..，复选框为 chx1，...，等等。
+现在，如果您想自己处理消息而不做任何实际工作，请返回 TRUE。如果您希望它完成原来的工作，
+请返回 FALSE。因此，在上面的示例中，当按下按钮（WM_COMMAND 到来）时，我们检查其类型，
+如果是取消按钮，则显示消息框。对于任何其他按钮，返回 FALSE 并让它完成原来的工作。
+另外，如果消息框回复 OK，则返回 FALSE 并让取消按钮完成其工作。如果消息框中的回复被取消，
+则返回 TRUE 以忽略原始任务。如果不小心，很容易做出相反的事情。如果你尝试各种事情你就会明白。

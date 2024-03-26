@@ -1,0 +1,388 @@
+第 44 章 右键出现的菜单
+这次，我们将创建一个弹出菜单，当您在客户区域中右键单击时会出现该菜单。
+单击鼠标右键，将出现一个菜单，如右图所示。我们上次做的加速器也适当地合并了。
+创建一个使用此菜单显示各种图片的程序。
+
+哦，这太棒了！
+这也很容易制作。
+
+我将简要解释一下步骤。
+
+1. 像往常一样创建菜单资源。然而，第一层
+　　无法显示。（这是一个假人）
+2. 使用 LoadMenu 函数加载菜单资源。
+3. 使用 GetSubMenu 函数获取弹出菜单的句柄。
+4. 使用 TrackPopupMenu 函数显示菜单。
+5. 使用 DestroyMenu 函数进行清理。
+
+就这样。您可以根据执行步骤 2 至 4 的时间更改菜单出现的时间。
+如果你想让它在右键单击时出现，可以在窗口过程中的WM_RBUTTONDOWN处执行。
+您还可以做一些奇特的事情，例如根据鼠标位置加载不同的菜单。
+但这一次很简单，当您在客户区域中右键单击时，会在该位置显示一个菜单。
+首先，让我们快速浏览一下右键单击时出现的 WM_RBUTTONDOWN 消息。
+
+WM_RBUTTONDOWN  
+fwKeys = wParam; // 按键标志
+xPos = LOWORD(lParam); // 鼠标光标的 X 坐标
+yPos = HIWORD(lParam); // Y 坐标
+
+当您捕获 WM_RBUTTONDOWN 消息时，您可以通过检查 lParam 找出鼠标位置。
+您还可以在检查 wParam 时检查是否按下了 Shift 键。
+
+HMENU LoadMenu(
+    HINSTANCE hInstance, //实例句柄
+    LPCTSTR lpMenuName    // 菜单资源 
+   );
+
+这将加载菜单资源。
+
+HMENU GetSubMenu(
+    HMENU hMenu,    // 菜单句柄
+    int nPos    // 菜单项的位置
+   );
+
+现在我们得到了弹出菜单的句柄。int nPos 指定弹出菜单中的哪个菜单项。
+从一开始它就是0。（下一个变成1、2等）
+
+BOOL TrackPopupMenu(
+    HMENU hMenu, // 菜单句柄
+    UINT uFlags, // 屏幕位置和鼠标按钮标志
+    int x, // 屏幕位置的X坐标
+    int y, // 屏幕位置的Y坐标
+    int nReserved, // 保留 输入 0
+    HWND hWnd, // 所有者窗口句柄
+    CONST RECT *prcRect // RECT结构的地址
+   );
+
+此功能显示一个弹出菜单。
+对于菜单句柄，指定弹出菜单的句柄。（这不是用LoadMenu获得的句柄！这是用GetSubMenu获得的句柄）
+
+uFlags指定弹出菜单的显示位置和x参数之间的关系。通常，菜单的左边缘位于 x 位置。
+因此，指定 TPM_LEFTALIGN。
+
+x,y是菜单的显示位置，这些是屏幕坐标的x,y坐标。从 WM_RBUTTONDOWN 的 lParam 
+获得的坐标是该窗口中的坐标（称为客户端坐标）。因此，需要对lParam得到的坐标进行转换。
+这就是下面所示的 ClientToScreen 函数。
+
+
+BOOL ClientToScreen(
+    HWND hWnd,    // 窗口句柄
+    LPPOINT lpPoint     // POINT 结构的地址
+   );
+
+在32位版本中，POINT结构是
+
+typedef struct tagPOINT { // pt  
+    LONG x; 
+    LONG y; 
+} POINT;
+
+
+它定义为：
+在 16 位版本中
+
+typedef struct tagPOINT {   /* pt */
+   int x;
+   int y;
+} POINT;
+
+它的定义如下。如果将当前客户端坐标存储在 POINT 结构中并执行 ClientToScreen 函数，它将转换为屏幕坐标。
+放弃最后加载的菜单。
+
+BOOL DestroyMenu(
+    HMENU hMenu    // 要销毁的菜单句柄
+   );
+
+如果您有这么多先验知识，那就很容易了。
+现在，让我们创建一个示例程序。
+首先，创建一个新项目。
+
+创建要在程序中使用的菜单资源。
+
+创建位图资源。（猫、狗、鼠）
+
+创建加速器表。
+
+将资源脚本保存为*.rc。
+
+将资源脚本加入到项目中。
+
+将源文件添加到项目中（尽管您尚未创建它）。
+
+
+
+为了以防万一，我将摘录菜单部分、加速器部分和位图部分的脚本。
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYPOPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "不显示"
+    BEGIN
+        MENUITEM "结束\tShift + Ctrl + X",      IDM_END
+        POPUP "选项"
+        BEGIN
+            MENUITEM "猫图片\tF1",                  IDM_CAT
+            MENUITEM "狗图片\tF2",                  IDM_DOG
+            MENUITEM "鼠图片\tF3",                  IDM_RAT
+            MENUITEM "擦除\tEsc",                   IDM_CLR
+        END
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+MYACCEL ACCELERATORS DISCARDABLE 
+BEGIN
+    VK_ESCAPE,      IDM_CLR,                VIRTKEY, NOINVERT
+    VK_F1,          IDM_CAT,                VIRTKEY, NOINVERT
+    VK_F2,          IDM_DOG,                VIRTKEY, NOINVERT
+    VK_F3,          IDM_RAT,                VIRTKEY, NOINVERT
+    "X",            IDM_END,                VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+MYCAT                   BITMAP  DISCARDABLE     "mycat.bmp"
+MYDOG                   BITMAP  DISCARDABLE     "mydog.bmp"
+MYRAT                   BITMAP  DISCARDABLE     "myrat.bmp"
+
+
+如果您手写资源脚本，请复制并使用上面的内容。首先
+
+#include <windows.h>
+#包括“***.h”
+
+请不要忘记添加它。***.h是符号定义头，你应该自己定义IDM_CLR等值。
+如果您创建了自己的资源脚本，请参考源文件。
+
+#include "resource.h"
+
+请将其替换为您自己创建的***.h。
+另外，mycat.bmp、mydog.bmp、myrat.bmp 是如下图像。
+
+		
+mycat.bmp	mydog.bmp	myrat.bmp
+
+如果到目前为止的准备工作顺利的话，文件视图将被配置为如左图所示。（对于 VC++5.0）
+
+资源视图将如左图所示。
+
+现在，当一切准备就绪后，让我们编写源文件（skd44.cpp）的内容。
+
+// sdk44.cpp
+sdk44.cpp
+
+#include <windows.h>
+#include "resource.h"
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+
+void DrawPic(HWND, HDC, int);
+
+const WCHAR szClassName[] = L"sdk44";        //窗口类
+HWND hParent;  //保存父窗口句柄
+HACCEL hAccel; //加速器表句柄
+
+enum{clr, cat, dog, rat};
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, nCmdShow)) {
+        return FALSE;
+    }
+
+    hAccel = LoadAccelerators(hCurInst, L"MYACCEL");
+    
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        if (!TranslateAccelerator(hParent, hAccel, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+    return msg.wParam;
+}
+
+加速器部分与平常略有不同。如果你不了解枚举，请参考 C语言版第46章。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //过程名称
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //实例句柄
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = NULL;    //菜单名称
+    wc.lpszClassName = (LPCWSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+这里总是一样的。
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, int nCmdShow)
+{
+    HWND hWnd；
+
+    hWnd = CreateWindow(szClassName,
+            L"Cat-Friendly Menu", //此名称将显示在标题栏中
+            WS_OVERLAPPEDWINDOW, //窗口类型
+            CW_USEDEFAULT, //X坐标
+            CW_USEDEFAULT, //Y坐标
+            200, // 宽度
+            100, // 高度
+            NULL, //父窗口句柄，创建父窗口时为NULL
+            NULL, //菜单句柄，使用类菜单时为NULL
+            hInst, //实例句柄
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    hParent = hWnd; //保存窗口句柄（不要忘记）
+    return TRUE;
+}
+
+这里几乎是一样的，但是一旦创建了父窗口，就把这个句柄复制到一个全局变量中。（这是WinMain函数中需要的）
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    int id;
+    static int sw = 0;
+    POINT pt;
+    HMENU hmenu, hSubmenu;
+    HDC hdc;
+    PAINTSTRUCT ps;
+
+    switch (msg) {
+        case WM_COMMAND:
+            switch (LOWORD(wp)) {
+                case IDM_END:
+                    SendMessage(hWnd, WM_CLOSE, 0L, 0L);
+                    break;
+                case IDM_CAT:
+                    sw = cat;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_DOG:
+                    sw = dog;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_RAT:
+                    sw = rat;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_CLR:
+                    sw = clr;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case WM_RBUTTONDOWN:
+            pt.x = LOWORD(lp);
+            pt.y = HIWORD(lp);
+            hmenu = LoadMenu((HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), L"MYPOPUP");
+            hSubmenu = GetSubMenu(hmenu, 0);
+            ClientToScreen(hWnd, &pt);
+            TrackPopupMenu(hSubmenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
+            DestroyMenu(hmenu);
+            break;
+        case WM_PAINT:
+            hdc = BeginPaint(hWnd, &ps);
+            DrawPic(hWnd, hdc, sw);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"完成确认",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            break;
+    }
+    return (DefWindowProc(hWnd, msg, wp, lp));
+}
+
+
+仔细看看按下右侧按钮时会发生什么。秘密是将当前客户端坐标存储在 POINT 结构中，
+并使用 ClientToScreen 函数将它们转换为屏幕坐标。
+另外，lp 按原样使用并存储在 POINT 结构中，但 16 位版本具有 MAKEPOINT 宏。
+
+制作要点(lp)
+
+我能够将它存储在 POINT 结构中。它不能与 32 位版本一起使用。
+
+void DrawPic(HWND hWnd, HDC hdc, int sw)
+{
+    HDC hmdc;
+    HBITMAP hBitmap;
+    BITMAP bmp;
+    HINSTANCE hInst;
+    int BMP_W, BMP_H;
+
+    hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+    switch (sw) {
+        case clr:
+            return;
+        case cat:
+            hBitmap = LoadBitmap(hInst, L"MYCAT");
+            break;
+        case dog:
+            hBitmap = LoadBitmap(hInst, L"MYDOG");
+            break;
+        case rat:
+            hBitmap = LoadBitmap(hInst, L"MYRAT");
+            break;
+        default:
+            break;
+    }
+    GetObject(hBitmap, sizeof(BITMAP), &bmp);
+    BMP_W = (int)bmp.bmWidth;
+    BMP_H = (int)bmp.bmHeight;
+    hmdc = CreateCompatibleDC(hdc);
+    SelectObject(hmdc, hBitmap);
+    BitBlt(hdc, 0, 0, BMP_W, BMP_H, hmdc, 0, 0, SRCCOPY);
+    DeleteDC(hmdc);
+    return;
+}
+
+然而，虽然它是一个简单地显示位图资源的函数，但秘密在于它根据 sw 的值来区分情况。
+clr、cat、dog 和rat 是最先出现的枚举。当为 clr 时，它不执行任何操作就返回。

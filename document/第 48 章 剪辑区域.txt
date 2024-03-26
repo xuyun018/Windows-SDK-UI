@@ -1,0 +1,276 @@
+﻿第 48 章 剪辑区域
+首先，看下图。
+
+
+	
+本来它是一个矩形位图，但我剪掉了要显示的部分。封闭形状所占据的区域称为区域。
+要创建剪辑区域，首先创建一个区域。然后，将其分配给设备上下文的剪辑属性以创建剪辑区域。
+您还可以通过组合多个区域来创建复杂区域。
+通过查看上图您可以得到一个想法。在左侧，创建了一个椭圆形区域并将其用作剪辑区域。
+中间的一个是通过将两个区域添加在一起制成的。右侧是类似的区域组合，但排除了重叠部分。
+
+创建区域的函数名为Create**Rgn。形状的名称将出现在 ** 部分。要创建矩形区域，请使用 CreateRectRgn。
+
+
+HRGN CreateRectRgn(
+    int nLeftRect, 
+    int nTopRect,
+    int nRightRect, 
+    int nBottomRect
+   );
+
+这将创建一个矩形区域。
+
+HRGN CreateEllipticRgn(
+    int nLeftRect, 
+    int nTopRect,
+    int nRightRect,  
+    int nBottomRect  
+   );
+
+这将创建一个椭圆形区域。（一个适合四个参数创建的矩形的椭圆）如果这些函数成功，
+您可以获得一个区域句柄。然后，执行SelectClipRgn函数来创建剪切区域。
+之后，如果正常绘制，也只会在剪切区域绘制。
+
+int SelectClipRgn(
+    HDC hdc,    // 设备上下文句柄
+    HRGN hrgn     // 区域句柄
+   );
+
+该函数的返回值可以是 NULLREGION、SIMPLEREGION、COMPLEXREGION 或 ERROR。
+请在帮助中查找。另外，当您使用完区域句柄后，请使用DeleteObject 将其删除。
+要合并区域，请使用CombineRgn 函数。
+
+
+int CombineRgn(
+    HRGN hrgnDest,    // 新创建的区域
+    HRGN hrgnSrc1,    // 源区域 1
+    HRGN hrgnSrc2,    // 源区域 2
+    int fnCombineMode     // 如何组合
+   );
+
+提前创建合适的区域hrgnDest。（任何事情都可以。）然后，使用要组合的区域作为第二个和第三个参数。
+组合方法有：RGN_AND（仅重叠区域）、RGN_OR（两个区域之和）、RGN_XOR（排除重叠区域）、
+RGN_COPY（仅区域1）、RGN_DIFF（从区域1中删除区域2），共有五种。现在，让我们看一下该程序。
+
+// rgn01.rc
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+MYBMP                   BITMAP  DISCARDABLE     "mybmp.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MYMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "选项(&O)"
+    BEGIN
+        MENUITEM "按原样显示(&R)",            	IDM_RCT
+        MENUITEM "椭圆剪辑(&E)",            	IDM_ELL
+        MENUITEM "或剪辑(&O)",              	IDM_ELLOR
+        MENUITEM "异或剪辑(&X)",          	IDM_ELLXOR
+    END
+    MENUITEM "退出(&X)",                    IDM_END
+END
+
+如果您正在编写自己的资源脚本，请不要忘记包含 windows.h 和符号定义头文件。
+
+//        rgn01.cpp
+
+#include <windows.h>
+#include "resource.h"
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+void DrawMyBMP(HWND, HDC, int);
+HRGN MakeMyClipRgn(int, BITMAP);
+
+const WCHAR szClassName[] = L"rgn01";        //窗口类名
+
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //プロシージャ名
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //インスタンス
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = L"MYMENU";    //メニュー名
+    wc.lpszClassName = (LPCWSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"猫友好区域",    //タイトルバーにこの名前が表示されます
+            WS_OVERLAPPEDWINDOW,    //ウィンドウの種類
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            195,    //幅
+            163,    //高さ
+            NULL,            //親ウィンドウのハンドル、親を作るときはNULL
+            NULL,            //メニューハンドル、クラスメニューを使うときはNULL
+            hInst,            //インスタンスハンドル
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    return TRUE;
+}
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    static int sw; //裁剪区域形状
+    int id;
+    HDC hdc;
+    PAINTSTRUCT ps;
+
+    switch (msg) {
+        case WM_COMMAND:
+            switch (LOWORD(wp)) {
+                case IDM_RCT:
+                    sw = 1;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_ELL:
+                    sw = 2;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_ELLOR:
+                    sw = 3;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_ELLXOR:
+                    sw = 4;
+                    InvalidateRect(hWnd, NULL, TRUE);
+                    break;
+                case IDM_END:
+                    SendMessage(hWnd, WM_CLOSE, 0L, 0L);
+                    break;
+            }
+            break;
+        case WM_PAINT:
+            hdc = BeginPaint(hWnd, &ps);
+            DrawMyBMP(hWnd, hdc, sw);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"終了確認",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            return (DefWindowProc(hWnd, msg, wp, lp));
+    }
+    return 0L;
+}
+
+void DrawMyBMP(HWND hWnd, HDC hdc, int sw)
+{
+    HINSTANCE hInst;
+    HBITMAP hBitmap;
+    BITMAP bm;
+    HDC hmdc;
+    LONG bmp_w, bmp_h;
+    HRGN hRgn;
+
+    hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+    hBitmap = LoadBitmap(hInst, L"MYBMP");
+    GetObject(hBitmap, sizeof(BITMAP), &bm);
+    bmp_w = bm.bmWidth;
+    bmp_h = bm.bmHeight;
+    hRgn = MakeMyClipRgn(sw, bm);
+    SelectClipRgn(hdc, hRgn);
+    hmdc = CreateCompatibleDC(hdc);
+    SelectObject(hmdc, hBitmap);
+    BitBlt(hdc, 0, 0, (int)bmp_w, (int)bmp_h, hmdc, 0, 0, SRCCOPY);
+    DeleteObject(hRgn);
+    DeleteDC(hmdc);
+    DeleteObject(hBitmap);
+    return;
+}
+
+HRGN MakeMyClipRgn(int sw, BITMAP bitmap)
+{
+    int bmp_w, bmp_h;
+    bmp_w = (int)bitmap.bmWidth;
+    bmp_h = (int)bitmap.bmHeight;
+    HRGN hRgn, hRgn1, hRgn2;
+    
+    switch (sw) {
+        case 1:
+            return CreateRectRgn(0, 0, bmp_w, bmp_h);
+        case 2:
+            return CreateEllipticRgn(0, 0, bmp_w, bmp_h);
+        case 3:
+            hRgn = CreateRectRgn(0, 0, 10, 10);
+            hRgn1 = CreateEllipticRgn(0, 0, (bmp_w / 3)*2, bmp_h);
+            hRgn2 = CreateEllipticRgn(bmp_w / 3, 0, bmp_w, bmp_h);
+            CombineRgn(hRgn, hRgn1, hRgn2, RGN_OR);
+            DeleteObject(hRgn1);
+            DeleteObject(hRgn2);
+            return hRgn;
+        case 4:
+            hRgn = CreateRectRgn(0, 0, 10, 10);
+            hRgn1 = CreateEllipticRgn(0, 0, (bmp_w / 3)*2, bmp_h);
+            hRgn2 = CreateEllipticRgn(bmp_w / 3, 0, bmp_w, bmp_h);
+            CombineRgn(hRgn, hRgn1, hRgn2, RGN_XOR);
+            DeleteObject(hRgn1);
+            DeleteObject(hRgn2);
+            return hRgn;
+        default:
+            return NULL;
+    }
+}
+
+
+请仔细看自制函数的MakeMyClipRgn。当选择菜单时，值将设置为sw。
+根据这个值来区分制作什么样的区域。另外，该函数的命名方法失败。
+不是制作剪辑区域，而是制作单纯的区域，所以如果是MakeMyRgn就好了。（无所谓……）

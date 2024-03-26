@@ -1,0 +1,180 @@
+﻿第 39 章 ChooseFont函数的具体例子
+这次，我将向您展示 ChooseFont 函数的具体示例。
+
+//        font03.cpp
+
+#include <windows.h>
+#include "resource.h"
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE, LPCWSTR);
+BOOL InitInstance(HINSTANCE, LPCWSTR, int);
+
+int setcf(CHOOSEFONT *);
+int draw_on = 0;
+
+CHOOSEFONT cf;
+LOGFONT logfont;
+HWND hParent;
+
+在这个程序中，头文件保留为resource.h。另外，准备 hParent 作为全局变量来复制父窗口的句柄。
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    const WCHAR szClassName[] = L"font03";        //ウィンドウクラス
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst, szClassName))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, szClassName, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+这里和往常一样。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst, LPCWSTR szClassName)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //プロシージャ名
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //インスタンス
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = L"MYMENU";    //メニュー名
+    wc.lpszClassName = (LPCSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+这里和平常一样。
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, LPCWSTR szClassName, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"猫でもわかるフォント",    //タイトルバーにこの名前が表示されます
+            WS_OVERLAPPEDWINDOW,    //ウィンドウの種類
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            CW_USEDEFAULT,    //幅
+            CW_USEDEFAULT,    //高さ
+            NULL,            //親ウィンドウのハンドル、親を作るときはNULL
+            NULL,            //メニューハンドル、クラスメニューを使うときはNULL
+            hInst,            //インスタンスハンドル
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    hParent = hWnd;
+    wcscpy(logfont.lfFaceName, L"ＭＳ ゴシック");
+    setcf(&cf);
+    return TRUE;
+}
+
+创建父窗口后，我们设置了日志字体结构的一些成员。这里设置为“MS Gothic”。
+通过这样做，当对话框第一次出现时，“MS Gothic”将被选择。（不需要单独设置。）
+接下来使用自制函数setcf设置CHOOSEFONT结构体。（内容稍后解释）
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    static draw_on = 0;
+    int id;
+    HDC hdc;
+    PAINTSTRUCT ps;
+    HFONT hFont, hOldf;
+    COLORREF crOldc;
+
+    switch (msg) {
+        case WM_COMMAND:
+            switch (LOWORD(wp)) {
+                case IDM_END:
+                    SendMessage(hWnd, WM_CLOSE, 0L, 0L);
+                    break;
+                case IDM_FONT:
+                    if(ChooseFont(&cf) ==TRUE) {
+                        InvalidateRect(hWnd, NULL, TRUE);
+                        draw_on = 1;
+                    }
+                    break;
+            }
+            break;
+        case WM_PAINT:
+            hdc = BeginPaint(hWnd, &ps);
+            hFont = CreateFontIndirect(cf.lpLogFont);
+            hOldf = SelectObject(hdc, hFont);
+            crOldc = SetTextColor(hdc, cf.rgbColors);
+            if(draw_on)
+                TextOut(hdc, 10, 10, (LPCWSTR)L"猫也能听懂", 5);
+            SelectObject(hdc, hOldf);
+            SetTextColor(hdc, crOldc);
+            DeleteObject(hFont);
+            EndPaint(hWnd, &ps);
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"完成确认",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            return (DefWindowProc(hWnd, msg, wp, lp));
+    }
+    return 0L;
+}
+
+当选择菜单中的IDM_FONT 时，执行ChooseFont 函数。
+当该函数返回 TRUE 时（按下 OK 按钮时），整个客户区将被重写。
+当WM_PAINT消息到来时，照常在BeginPaint和EndPaint之间编写绘图函数。当我写完后，
+我又恢复原来的颜色和字体。（这种情况下，即使不退货也没有问题。）
+
+
+int setcf(CHOOSEFONT *cf)
+{
+    cf->lStructSize = sizeof(CHOOSEFONT);
+    cf->hwndOwner = hParent;
+    cf->lpLogFont = &logfont;
+    cf->Flags = CF_SCREENFONTS | CF_EFFECTS | CF_INITTOLOGFONTSTRUCT;
+    cf->rgbColors = RGB(0, 0, 0);
+    cf->nFontType = SCREEN_FONTTYPE;
+    return 0;
+}
+
+该函数设置所需的成员。由于cf是全局变量，所以除了set之外的所有成员都用0填充。
+最后我们来看看菜单资源。
+
+使用 VC++ 资源编辑器 (APP STUDIO) 创建菜单。此时，请务必将菜单 ID 用双引号引起来。
+请按照示例输入“MYMENU”。另外，创建对话框时请将其用双引号引起来。以后会更容易。
+我可能会在后面的章节中解释这是如何完成的。然后检查资源视图。
+事实上，MYMENU 是用双引号括起来的。
+对于菜单项ID，将“End”设置为IDM_END，将“Font”设置为IDM_FONT，如左图所示。
+做这种工作时，将“大头针”插在左上角比较容易。确定所有 ID 后，为其命名并保存。
+在本例中，我将其命名为 font03.rc。并且不要忘记将此 font03.rc 添加到您的项目中。
+（当然，还包括源文件font03.cpp。）
+之后，只需按构建按钮，程序就完成了。另请参阅 第 14 章以获取有关如何创建资源的信息。
+当您运行该程序时，会出现一个很酷的对话框，如上一章所示。对字体进行各种设置，
+然后按确定按钮，设置将反映在显示的字符中，如左图所示。

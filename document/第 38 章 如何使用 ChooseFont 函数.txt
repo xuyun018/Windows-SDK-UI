@@ -1,0 +1,105 @@
+﻿第 38 章 如何使用 ChooseFont 函数
+这次会有点教育意义吗？我会给你一个解释。
+
+现在，您见过像左边这样的对话框吗？选择字体时经常会出现这种情况。
+当然，您可以创建自己的对话框。但这是相当麻烦的事。这样就预先准备好了常用的对话框。
+这称为 公共对话框。
+那么如果你想使用这样的东西你应该怎么做呢？它相对容易使用。
+使用 CHOOSE blah 结构和 Choose blah 函数。这次我将以 ChooseFont 函数为例进行说明。
+
+
+BOOL ChooseFont(
+    LPCHOOSEFONT lpcf     // CHOOSEFONT 结构的地址
+   );
+
+如果正常完成（按下 OK 按钮），此函数将返回 TRUE，如果发生错误，则返回 FALSE。这是最简单的例子。
+
+LOGFONTlf;
+CHOOSEFONT cf;
+
+memset(&cf, 0, sizeof(CHOOSEFONT));
+
+cf.lStructSize = sizeof(CHOOSEFONT);
+cf.hwndOwner = hwnd; //父窗口句柄
+cf.lpLogFont = &lf; //要设置的日志字体结构体地址
+cf.Flags = CF_SCRENFONTS | CF_EFFECTS; //初始化标志
+cf.rgbColors = RGB(0, 0, 0); //选择的颜色存储在这里
+cf.nFontType = SCREEN_FONTTYPE;
+
+ChooseFont(&cf);
+
+首先，在CHOOSEFONT结构中设置必要的信息。这个时候很难设置所有的成员，
+所以我们将它们全部填充为0。然后设置所需的成员。然后调用 ChooseFont 函数。
+现在注意 cf.lpLogFont。当执行此功能并按下“确定”按钮时，
+对话框中所选字体的各种设置将被写入此处指定的日志字体结构中。
+
+实际上，这种日志字体结构是在以指定字体显示字符时使用的。
+
+现在，让我们看一下 CHOOSEFONT 和 LOGFONT 结构的定义。
+
+
+ypedef struct {    // cf  
+    DWORD        lStructSize; 
+    HWND         hwndOwner; 
+    HDC          hDC; 
+    LPLOGFONT    lpLogFont; 
+    INT          iPointSize; 
+    DWORD        Flags; 
+    DWORD        rgbColors; 
+    LPARAM       lCustData; 
+    LPCFHOOKPROC lpfnHook; 
+    LPCTSTR      lpTemplateName; 
+    HINSTANCE    hInstance; 
+    LPTSTR       lpszStyle; 
+    WORD         nFontType; 
+    WORD         ___MISSING_ALIGNMENT__; 
+    INT          nSizeMin; 
+    INT          nSizeMax; 
+} CHOOSEFONT;
+
+将结构体的大小设置为lStructSize。
+hWndOwner 指定该对话框的父级。
+
+不使用打印机时无需配置 hDC。
+
+lpLogFont 如前所述。
+
+iPointSize 指示所选字体的大小（以十分之一磅为单位）。
+
+在标志中，设置对话框的初始化标志。例如，设置 CF_EFFECTS 将显示删除线、颜色和下划线选项。
+还有很多其他的，请参阅帮助页面。
+
+rgbColors 指定初始颜色（在对话框首次出现时选择）。如果用户随后选择不同的颜色并按下“确定”按钮，则该颜色将被存储。
+
+nSizeMin、nSizeMax 指定用户可以选择的最小和最大点大小。但是，除非设置了 CF_LIMITSIZE 标志，否则这将不起作用。
+
+这里，有一些与钩子函数相关的东西我没有解释。我计划在后面的章节中解释这一点（除非我忘记了）。
+
+
+typedef struct tagLOGFONT { // lf  
+   LONG lfHeight; 
+   LONG lfWidth; 
+   LONG lfEscapement; 
+   LONG lfOrientation; 
+   LONG lfWeight; 
+   BYTE lfItalic; 
+   BYTE lfUnderline; 
+   BYTE lfStrikeOut; 
+   BYTE lfCharSet; 
+   BYTE lfOutPrecision; 
+   BYTE lfClipPrecision; 
+   BYTE lfQuality; 
+   BYTE lfPitchAndFamily; 
+   TCHAR lfFaceName[LF_FACESIZE]; 
+} LOGFONT;
+
+哦，我以前在哪里见过这个！
+是的。它看起来和第 27 章中出现的 CreateFont 函数的参数一模一样。
+如果要设置和使用此日志字体结构中的必要项，请使用 CreateFontIndirect 函数而不是 CreateFont 函数。
+
+HFONT CreateFontIndirect(
+    CONST LOGFONT *lplf // 指向日志字体结构的指针  
+   ）；
+
+在该函数之后，调用SelectObject函数与之前相同。现在您已经了解如何使用 ChooseFont 函数以及
+如何使用此对话框中设置的字体。下次我将给大家展示一个具体的例子。

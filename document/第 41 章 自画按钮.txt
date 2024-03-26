@@ -1,0 +1,219 @@
+﻿第 41 章 自画按钮
+在第28章中，我们学习了如何使用按钮控件。这次，我们将讨论按钮所有者绘制。
+自画，顾名思义，就是自画的意思。这很容易做到。请参考第28章创建按钮。
+此时，窗口样式应为WS_CHILD | WS_VISIBLE | BS_OWNERDRAW。
+何时在按钮上绘图是当所有者过程捕获 WM_DRAWITEM 时。
+
+WM_DRAWITEM
+idCtl = (UINT) wParam; //控件ID  
+lpdis = (LPDRAWITEMSTRUCT) lParam; //指向DRAWITEMSTRUCT结构的指针
+
+事情是这样的。当您捕获 WM_DRAWITEM 消息时，您可以通过检查 wParam 或 lParam 找到以下信息。
+顺便问一下，DRAWITEMSTRUCT 结构是什么？
+
+typedef struct tagDRAWITEMSTRUCT {  // dis
+    UINT  CtlType;
+    UINT  CtlID; 
+    UINT  itemID;
+    UINT  itemAction;
+    UINT  itemState; 
+    HWND  hwndItem;
+    HDC   hDC;
+    RECT  rcItem;
+    DWORD itemData; 
+} DRAWITEMSTRUCT; 
+
+它是这样定义的。可以看到，如果你想画一些东西，你可以使用hDC成员。其他会员如有需要请查看帮助。
+
+现在，让我们创建一个示例程序。这次，我们将创建一个大按钮（100*100）并在其上绘制猫的BMP。
+每次按下此按钮时，猫的图片都会发生变化。
+
+// owndr01.cpp
+
+#include <windows.h>
+#include <CommCtrl.h>
+
+#define ID_MYOWN   1000 //按钮ID
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL InitApp(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+
+void DrawPic(HDC, HINSTANCE, int); //在按钮上绘制
+
+WCHAR szClassName[] = L"owndr01";        //窗口类
+
+HWND hMyButton; //所有者绘制按钮的窗口句柄
+
+
+int WINAPI wWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst,
+                   LPWSTR lpsCmdLine, int nCmdShow)
+{
+    MSG msg;
+    
+    if (!hPrevInst) {
+        if (!InitApp(hCurInst))
+            return FALSE;
+    }
+    if (!InitInstance(hCurInst, nCmdShow)) {
+        return FALSE;
+    }
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return msg.wParam;
+}
+
+
+这与往常几乎一样。
+
+//注册窗口类
+
+BOOL InitApp(HINSTANCE hInst)
+{
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WndProc;    //过程名称
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;        //实例
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = NULL;    //菜单名称
+    wc.lpszClassName = (LPCWSTR)szClassName;
+    return (RegisterClass(&wc));
+}
+
+//创建窗口
+
+BOOL InitInstance(HINSTANCE hInst, int nCmdShow)
+{
+    HWND hWnd;
+
+    hWnd = CreateWindow(szClassName,
+            L"连猫都能听懂的自画",    //这个名字会显示在标题栏中
+            WS_OVERLAPPEDWINDOW,    //窗口类型
+            CW_USEDEFAULT,    //Ｘ座標
+            CW_USEDEFAULT,    //Ｙ座標
+            CW_USEDEFAULT,    //幅
+            CW_USEDEFAULT,    //高さ
+            NULL,            //親ウィンドウのハンドル、親を作るときはNULL
+            NULL,            //メニューハンドル、クラスメニューを使うときはNULL
+            hInst,            //インスタンスハンドル
+            NULL);
+    if (!hWnd)
+        return FALSE;
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+    return TRUE;
+}
+
+除了父窗口的标题之外，其他一切都相同。
+
+//窗口过程
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    int id;
+    HDC hdc;
+    static int sw = 1; //绘制哪张BMP
+
+    switch (msg) {
+        case WM_CREATE: //创建父按钮后立即创建按钮
+            hMyButton = CreateWindow(WC_BUTTON,
+                NULL,  //表示文字列
+                WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
+                30, 30, //位置
+                100, 100, //幅・高さ
+                hWnd, //親ウィンドウ
+                (HMENU)ID_MYOWN, //ボタンID
+                (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), //インスタンスハンドル
+                NULL);
+            break;
+        case WM_DRAWITEM: //如果捕获到此消息，则绘制
+            hdc = ((LPDRAWITEMSTRUCT)lp)->hDC;
+            DrawPic(hdc, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), sw);
+            break;
+        case WM_COMMAND:
+            switch (LOWORD(wp)) {
+                case ID_MYOWN:
+                    if (sw == 1) {
+                        sw = 0;
+                        return 0L;
+                    }
+                    if (sw == 0) {
+                        sw = 1;
+                        return 0L;
+                    }
+                    break;
+                default:
+                    return (DefWindowProc(hWnd, msg, wp, lp));
+            }
+            break;
+        case WM_CLOSE:
+            id = MessageBox(hWnd,
+                (LPCWSTR)L"您确定要退出吗？",
+                (LPCWSTR)L"完成确认",
+                MB_YESNO | MB_ICONQUESTION);
+            if (id == IDYES) {
+                DestroyWindow(hWnd);
+            }
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            return (DefWindowProc(hWnd, msg, wp, lp));
+    }
+    return 0L;
+}
+
+一旦捕获 WM_CREATE 消息，就创建按钮。
+如果您捕获 WM_DRAWITEM，请为按钮执行所有者绘制。在上面的示例中，
+使用 hdc = ((LPDRAWITEMSTRUCT)lp)->hDC; 获取设备上下文句柄，
+但使用 GetDC 函数也可以完成相同的操作。这时候一定要记得ReleaseDC。
+
+每次按下按钮（WM_COMMAND）时，都会切换绘制内容的开关。
+
+void DrawPic(HDC hdc, HINSTANCE hInst, int sw)
+{
+    HBITMAP hBitmap = NULL;
+    HDC hmdc;
+    switch (sw) {
+        case 0:
+            hBitmap = LoadBitmap(hInst, L"MYBMP1");
+            break;
+        case 1:
+            hBitmap = LoadBitmap(hInst, L"MYBMP2");
+            break;
+    }
+    hmdc = CreateCompatibleDC(hdc);
+    SelectObject(hmdc, hBitmap);
+    BitBlt(hdc, 0, 0, 100, 100, hmdc, 0, 0, SRCCOPY);
+    DeleteDC(hmdc);
+    DeleteObject(hBitmap);
+    return;
+}
+
+绘制的内容根据 sw 的值而变化。有关绘制位图的信息， 请参阅第 26 章。
+下面以VC++5.0为例介绍如何创建位图资源。
+
+
+在资源相关工具栏上，按左图中左起第五个按钮。如果未显示此工具栏，
+请从菜单中选择“工具”和“自定义”，然后选中工具栏项中的“资源”。
+
+现在您可以创建新的位图资源。请按如下方式设置位图属性。
+
+请将位图 ID 用双引号括起来，例如“MYBMP1”。将宽度和高度设置为 100。
+通过提前将所需图像复制到剪贴板并将其粘贴到资源编辑器中，
+可以更轻松地做到这一点。使用“文件”和“另存为”指定合适的文件名（*.rc）并保存。
+通过选择“Project”和“Add to Project”将其添加到带有源文件的项目中。
+您所要做的就是按下构建按钮即可完成。您可以通过“构建”和“设置活动配置”
+在发布版本和调试版本之间进行选择。或者，您可以通过在“工具”和“自定义”
+中显示与构建相关的工具栏来轻松配置设置。
+
+	
+当您单击按钮（猫的图片）时，图片会交替变化。（窗口已缩小到适当的大小。）
+但是，我有各种抱怨。有时它对点击的反应不佳。尝试改变程序的算法，使其运行更流畅。
